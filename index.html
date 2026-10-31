@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fintech Pro Wallet - Dark Bento Edition</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen p-3 md:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800/80 pb-5">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee] animate-pulse"></span>
+          <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">Personal Treasury System</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-white mt-1">กระเป๋าเงินรวม & วิเคราะห์รายรับ-รายจ่าย</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="header-date" class="px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-slate-400 shadow-inner"></span>
+        <button onclick="exportData()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-300 transition flex items-center gap-1">
+          📥 Backup
+        </button>
+        <button onclick="document.getElementById('import-file').click()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-300 transition flex items-center gap-1">
+          📤 Restore
+        </button>
+        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
+      </div>
+    </header>
+
+    <!-- BENTO แถวบน: ภาพรวมสุทธิ + กราฟกระแสเงินสด + สัดส่วนตามช่องทาง -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+      
+      <!-- การ์ด 1: ยอดคงเหลือสุทธิ (Col 4) -->
+      <div class="md:col-span-4 bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 p-6 rounded-3xl border border-slate-800 shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex flex-col justify-between">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">ยอดเงินคงเหลือสุทธิรวม</span>
+          <div id="net-balance" class="text-3xl md:text-4xl font-extrabold mt-2 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.25)]">
+            ฿0.00
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-6 border-t border-slate-800/80 mt-4">
+          <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/50">
+            <span class="text-[11px] text-slate-400 font-medium">🟢 รายรับรวม</span>
+            <div id="total-income" class="text-sm md:text-base font-bold text-emerald-400 mt-1">฿0.00</div>
+          </div>
+          <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/50">
+            <span class="text-[11px] text-slate-400 font-medium">🔴 รายจ่ายรวม</span>
+            <div id="total-expense" class="text-sm md:text-base font-bold text-rose-400 mt-1">฿0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- การ์ด 2: กราฟเปรียบเทียบกระแสเงินสด (Col 4) -->
+      <div class="md:col-span-4 bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-800 shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">📊 เปรียบเทียบกระแสเงินสด</h3>
+          <span class="text-[10px] text-slate-500">รายรับ vs รายจ่าย</span>
+        </div>
+        <div class="h-44 relative">
+          <canvas id="flowChart"></canvas>
+        </div>
+      </div>
+
+      <!-- การ์ด 3: กราฟสัดส่วนธุรกรรมตามช่องทาง (Col 4) -->
+      <div class="md:col-span-4 bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-800 shadow-lg flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">🍩 สัดส่วนธุรกรรมตามช่องทาง</h3>
+          <span class="text-[10px] text-slate-500">ธนาคาร & สินเชื่อ & แพลตฟอร์ม</span>
+        </div>
+        <div class="h-44 relative flex items-center justify-center">
+          <canvas id="channelChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (Multi-Wallet Bento Grid) -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">ยอดเงินคงเหลือแยกตามบัญชี</h2>
+          <span class="text-[11px] text-slate-500 hidden sm:inline">(คลิกการ์ดเพื่อกรองดูเฉพาะบัญชี)</span>
+        </div>
+        <button onclick="filterByChannel('ALL')" id="btn-show-all" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition">
+          ดูทุกบัญชี
+        </button>
+      </div>
+
+      <!-- Mini-Cards สำหรับทุกธนาคาร/ช่องทาง -->
+      <div id="wallet-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <!-- Render ผ่าน JavaScript -->
+      </div>
+    </div>
+
+    <!-- แถวล่าง: ฟอร์มบันทึก & รายการประวัติ -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ฟอร์มกรอกข้อมูล (Col 1-5) -->
+      <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-md p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>⚡</span> บันทึกรายการใหม่
+          </h2>
+          <span class="text-[11px] text-slate-500">รองรับค่าบ้าน/น้ำ/ไฟ & KTC</span>
+        </div>
+
+        <form id="tx-form" class="space-y-3.5">
+          <!-- สลับ รายรับ / รายจ่าย -->
+          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
+            <label class="cursor-pointer">
+              <input type="radio" name="tx-type" value="income" class="peer sr-only">
+              <div class="text-center py-2.5 rounded-xl text-xs font-bold text-slate-400 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-400 peer-checked:border peer-checked:border-emerald-500/40 transition">
+                🟢 + รายรับ
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="tx-type" value="expense" class="peer sr-only" checked>
+              <div class="text-center py-2.5 rounded-xl text-xs font-bold text-slate-400 peer-checked:bg-rose-500/15 peer-checked:text-rose-400 peer-checked:border peer-checked:border-rose-500/40 transition">
+                🔴 - รายจ่าย
+              </div>
+            </label>
+          </div>
+
+          <!-- วันที่ & ช่องทาง -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">วันที่</label>
+              <input type="date" id="tx-date" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">ช่องทาง / บัญชี</label>
+              <select id="tx-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition font-semibold">
+                <optgroup label="ธนาคาร & บัตร">
+                  <option value="KBANK">🟢 KBANK (กสิกรไทย)</option>
+                  <option value="KTB">🔵 KTB (กรุงไทย)</option>
+                  <option value="SCB">🟣 SCB (ไทยพาณิชย์)</option>
+                  <option value="BAY">🟡 BAY (กรุงศรี)</option>
+                  <option value="GHB">🟠 GHB (ธอส.)</option>
+                  <option value="KTC">💳 KTC (เคทีซี / บัตรเครดิต)</option>
+                </optgroup>
+                <optgroup label="สินเชื่อ / ดิจิทัล">
+                  <option value="Money Thunder">⚡ Money Thunder</option>
+                  <option value="UMey">🔴 Umay+ (ยูเมะพลัส)</option>
+                </optgroup>
+                <optgroup label="ร้านค้า & แพลตฟอร์ม">
+                  <option value="Shopee">🛍️ Shopee</option>
+                  <option value="Tiktok">🎵 TikTok</option>
+                </optgroup>
+                <optgroup label="อื่นๆ">
+                  <option value="เงินสด/อื่นๆ">💵 เงินสด / อื่นๆ</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          <!-- หมวดหมู่ -->
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 mb-1">หมวดหมู่</label>
+            <select id="tx-category" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+              <optgroup label="บิลและค่าใช้จ่ายประจำ">
+                <option value="ค่าบ้าน">🏠 ค่าบ้าน / ผ่อนบ้าน / ค่าเช่า</option>
+                <option value="ค่าน้ำ">💧 ค่าน้ำประปา</option>
+                <option value="ค่าไฟ">⚡ ค่าไฟฟ้า</option>
+                <option value="ชำระสินเชื่อ/บัตร">💳 ชำระสินเชื่อ / บัตร KTC / ค่างวด</option>
+              </optgroup>
+              <optgroup label="รายได้">
+                <option value="รายได้ขายของ">📦 รายได้ขายของ (Shopee / TikTok)</option>
+                <option value="เงินเดือน">💵 เงินเดือน / ค่าจ้าง</option>
+              </optgroup>
+              <optgroup label="ค่าใช้จ่ายทั่วไป">
+                <option value="อาหารและเครื่องดื่ม">🍽️ อาหารและของกิน</option>
+                <option value="เดินทาง/น้ำมัน">🚗 ค่าเดินทาง / ค่าน้ำมัน</option>
+                <option value="ช้อปปิ้ง">🛍️ ช้อปปิ้ง / ของใช้</option>
+                <option value="อื่นๆ">✨ อื่นๆ</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- รายละเอียด -->
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 mb-1">รายละเอียดรายการ</label>
+            <input type="text" id="tx-desc" placeholder="เช่น จ่ายค่างวด KTC, ชำระค่าไฟ, ถอนเงิน TikTok" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+          </div>
+
+          <!-- จำนวนเงิน -->
+          <div>
+            <label class="block text-[11px] font-medium text-slate-400 mb-1">จำนวนเงิน (บาท)</label>
+            <input type="number" step="0.01" min="0.01" id="tx-amount" placeholder="0.00" required class="w-full text-base font-bold bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-cyan-300 outline-none focus:border-cyan-500 transition">
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] transition active:scale-[0.99]">
+            + บันทึกรายการลงระบบ
+          </button>
+        </form>
+      </div>
+
+      <!-- รายการประวัติ (Col 6-12) -->
+      <div class="lg:col-span-7 bg-slate-900/90 backdrop-blur-md p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>📋</span> ประวัติธุรกรรม
+            </h2>
+            <span id="active-filter-badge" class="text-[11px] text-cyan-400 font-semibold mt-0.5 block">แสดง: ทั้งหมด</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="filter-type" onchange="renderTransactions()" class="text-xs bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 outline-none">
+              <option value="ALL">ทั้งหมด</option>
+              <option value="income">🟢 รายรับ</option>
+              <option value="expense">🔴 รายจ่าย</option>
+            </select>
+            <button onclick="clearAllData()" class="text-xs text-rose-400/80 hover:text-rose-400 hover:underline">ล้างทั้งหมด</button>
+          </div>
+        </div>
+
+        <div id="tx-list" class="space-y-2.5 max-h-[510px] overflow-y-auto pr-1"></div>
+        <div id="tx-empty" class="text-center py-16 text-slate-600 text-xs hidden">
+          ไม่มีรายการที่ตรงกับเงื่อนไข
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // ข้อมูลช่องทาง & สีแบรนด์นีออน (เพิ่มเงินสด/อื่นๆ ครบถ้วน)
+    const CHANNELS = [
+      { id: 'KBANK', name: 'KBANK', color: '#10b981', tagText: 'text-emerald-400', tagBorder: 'border-emerald-500/40', tagBg: 'bg-emerald-500/10' },
+      { id: 'KTB', name: 'KTB', color: '#0ea5e9', tagText: 'text-sky-400', tagBorder: 'border-sky-500/40', tagBg: 'bg-sky-500/10' },
+      { id: 'SCB', name: 'SCB', color: '#a855f7', tagText: 'text-purple-400', tagBorder: 'border-purple-500/40', tagBg: 'bg-purple-500/10' },
+      { id: 'BAY', name: 'BAY', color: '#f59e0b', tagText: 'text-amber-400', tagBorder: 'border-amber-500/40', tagBg: 'bg-amber-500/10' },
+      { id: 'GHB', name: 'GHB', color: '#f97316', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
+      { id: 'KTC', name: 'KTC', color: '#38bdf8', tagText: 'text-blue-300', tagBorder: 'border-blue-400/40', tagBg: 'bg-blue-500/10' },
+      { id: 'Money Thunder', name: 'Thunder', color: '#6366f1', tagText: 'text-indigo-400', tagBorder: 'border-indigo-500/40', tagBg: 'bg-indigo-500/10' },
+      { id: 'UMey', name: 'Umay+', color: '#f43f5e', tagText: 'text-rose-400', tagBorder: 'border-rose-500/40', tagBg: 'bg-rose-500/10' },
+      { id: 'Shopee', name: 'Shopee', color: '#ea580c', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
+      { id: 'Tiktok', name: 'TikTok', color: '#94a3b8', tagText: 'text-slate-300', tagBorder: 'border-slate-500/40', tagBg: 'bg-slate-700/30' },
+      { id: 'เงินสด/อื่นๆ', name: 'เงินสด', color: '#14b8a6', tagText: 'text-teal-300', tagBorder: 'border-teal-400/40', tagBg: 'bg-teal-500/10' }
+    ];
+
+    let transactions = JSON.parse(localStorage.getItem('dark_bento_v3')) || [];
+    
+    // เติม Unique ID ให้ข้อมูลรุ่นเก่าที่ยังไม่มี ID
+    transactions = transactions.map(t => t.id ? t : { ...t, id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) });
+
+    let currentFilter = 'ALL';
+    let flowChart = null;
+    let channelChart = null;
+
+    // ตั้งค่าวันปัจจุบัน
+    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('header-date').innerText = '📅 ' + new Date().toLocaleDateString('th-TH', { dateStyle: 'medium' });
+
+    function initDarkCharts() {
+      // 1. Flow Chart (กระแสเงินสด)
+      const ctxFlow = document.getElementById('flowChart').getContext('2d');
+      flowChart = new Chart(ctxFlow, {
+        type: 'bar',
+        data: {
+          labels: ['รายรับ', 'รายจ่าย'],
+          datasets: [{
+            data: [0, 0],
+            backgroundColor: ['#10b981', '#f43f5e'],
+            borderRadius: 8,
+            barThickness: 32
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#64748b', font: { size: 10 } },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8', font: { size: 11, weight: 'bold' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+
+      // 2. Channel Chart (สัดส่วนตามช่องทาง)
+      const ctxChannel = document.getElementById('channelChart').getContext('2d');
+      channelChart = new Chart(ctxChannel, {
+        type: 'doughnut',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: [],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#94a3b8', boxWidth: 8, font: { size: 9 } }
+            }
+          }
+        }
+      });
+    }
+
+    function calculateChannelBalances() {
+      const balances = {};
+      CHANNELS.forEach(c => balances[c.id] = 0);
+
+      transactions.forEach(t => {
+        const amt = parseFloat(t.amount) || 0;
+        if (balances[t.channel] !== undefined) {
+          balances[t.channel] += (t.type === 'income' ? amt : -amt);
+        }
+      });
+      return balances;
+    }
+
+    // เรนเดอร์การ์ดกระเป๋าเงินแยกตามบัญชี
+    function renderWalletCards() {
+      const grid = document.getElementById('wallet-cards-grid');
+      const balances = calculateChannelBalances();
+      grid.innerHTML = '';
+
+      CHANNELS.forEach(c => {
+        const bal = balances[c.id] || 0;
+        const isSelected = currentFilter === c.id;
+
+        const card = document.createElement('div');
+        card.onclick = () => filterByChannel(c.id);
+        card.className = `p-3 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+          isSelected 
+            ? 'bg-slate-900 border-cyan-400 ring-2 ring-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
+            : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold" style="color: ${c.color}">${c.name}</span>
+            <span class="w-2 h-2 rounded-full" style="background-color: ${c.color}"></span>
+          </div>
+          <div class="mt-2 text-xs font-bold ${bal >= 0 ? 'text-slate-100' : 'text-rose-400'}">
+            ฿${bal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderSummaryAndCharts() {
+      let income = 0;
+      let expense = 0;
+      const channelVol = {};
+
+      transactions.forEach(t => {
+        const amt = parseFloat(t.amount) || 0;
+        if (t.type === 'income') income += amt;
+        else expense += amt;
+        channelVol[t.channel] = (channelVol[t.channel] || 0) + amt;
+      });
+
+      const net = income - expense;
+      document.getElementById('total-income').innerText = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+      document.getElementById('total-expense').innerText = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+      
+      const netElem = document.getElementById('net-balance');
+      netElem.innerText = `฿${net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+      netElem.className = `text-3xl md:text-4xl font-extrabold mt-2 ${net >= 0 ? 'text-cyan-400' : 'text-rose-400'} drop-shadow-[0_0_15px_rgba(34,211,238,0.25)]`;
+
+      // อัปเดตกราฟ
+      if (flowChart && channelChart) {
+        flowChart.data.datasets[0].data = [income, expense];
+        flowChart.update();
+
+        const labels = Object.keys(channelVol);
+        const data = Object.values(channelVol);
+        channelChart.data.labels = labels.length ? labels : ['ไม่มีข้อมูล'];
+        channelChart.data.datasets[0].data = data.length ? data : [1];
+        channelChart.data.datasets[0].backgroundColor = labels.length 
+          ? labels.map(l => {
+              const match = CHANNELS.find(c => c.id === l);
+              return match ? match.color : '#64748b';
+            })
+          : ['#334155'];
+        channelChart.update();
+      }
+    }
+
+    function renderTransactions() {
+      const list = document.getElementById('tx-list');
+      const empty = document.getElementById('tx-empty');
+      const typeFilter = document.getElementById('filter-type').value;
+      list.innerHTML = '';
+
+      let filtered = transactions;
+      if (currentFilter !== 'ALL') {
+        filtered = filtered.filter(t => t.channel === currentFilter);
+      }
+      if (typeFilter !== 'ALL') {
+        filtered = filtered.filter(t => t.type === typeFilter);
+      }
+
+      if (filtered.length === 0) {
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+      }
+
+      filtered.forEach((t) => {
+        const isInc = t.type === 'income';
+        const amt = parseFloat(t.amount) || 0;
+        const ch = CHANNELS.find(c => c.id === t.channel) || {
+          tagText: 'text-slate-400', tagBorder: 'border-slate-700', tagBg: 'bg-slate-800'
+        };
+
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition group';
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-xs px-2.5 py-1 rounded-lg border font-bold ${ch.tagBg} ${ch.tagBorder} ${ch.tagText}">
+              ${t.channel}
+            </span>
+            <div>
+              <div class="text-xs font-bold text-slate-200">${t.desc}</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">${t.date} • ${t.category}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">
+              ${isInc ? '+' : '-'}฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+            </span>
+            <button onclick="deleteTxById('${t.id}')" class="text-slate-600 hover:text-rose-400 text-xs p-1 transition" title="ลบรายการ">✕</button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderAll() {
+      renderSummaryAndCharts();
+      renderWalletCards();
+      renderTransactions();
+    }
+
+    function filterByChannel(channel) {
+      currentFilter = channel;
+      document.getElementById('active-filter-badge').innerText = channel === 'ALL' 
+        ? 'แสดง: ทุกบัญชี' 
+        : `แสดงเฉพาะบัญชี: ${channel}`;
+      renderWalletCards();
+      renderTransactions();
+    }
+
+    document.getElementById('tx-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newTx = {
+        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        type: document.querySelector('input[name="tx-type"]:checked').value,
+        date: document.getElementById('tx-date').value,
+        channel: document.getElementById('tx-channel').value,
+        category: document.getElementById('tx-category').value,
+        desc: document.getElementById('tx-desc').value.trim(),
+        amount: parseFloat(document.getElementById('tx-amount').value)
+      };
+
+      transactions.unshift(newTx);
+      saveData();
+      document.getElementById('tx-desc').value = '';
+      document.getElementById('tx-amount').value = '';
+      renderAll();
+    });
+
+    // ป้องกันปัญหาลบผิดอันเมื่อมีการ Filter ด้วยการใช้ ID แทน Index
+    window.deleteTxById = function(id) {
+      if (confirm('ยืนยันลบรายการนี้ใช่หรือไม่?')) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveData();
+        renderAll();
+      }
+    };
+
+    window.clearAllData = function() {
+      if (confirm('คุณต้องการล้างข้อมูลประวัติทั้งหมดใช่หรือไม่? (การกระทำนี้ไม่สามารถย้อนกลับได้)')) {
+        transactions = [];
+        localStorage.removeItem('dark_bento_v3');
+        renderAll();
+      }
+    };
+
+    function saveData() {
+      localStorage.setItem('dark_bento_v3', JSON.stringify(transactions));
+    }
+
+    // ฟังก์ชัน Backup / Restore JSON
+    window.exportData = function() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `wallet_backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    };
+
+    window.importData = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed)) {
+            transactions = parsed.map(t => t.id ? t : { ...t, id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) });
+            saveData();
+            renderAll();
+            alert('นำเข้าข้อมูลสำเร็จแล้ว!');
+          } else {
+            alert('โครงสร้างไฟล์ไม่ถูกต้อง');
+          }
+        } catch (err) {
+          alert('ไม่สามารถอ่านไฟล์ JSON นี้ได้');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    };
+
+    // เริ่มการทำงาน
+    initDarkCharts();
+    renderAll();
+  </script>
+</body>
+</html>
