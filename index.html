@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fintech Pro Wallet - Dark Bento Edition</title>
+  <title>KapookHippo - Cloud Wallet</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
@@ -26,19 +26,15 @@
       <div>
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee] animate-pulse"></span>
-          <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">Personal Treasury System</span>
+          <span class="text-xs uppercase tracking-widest text-cyan-400 font-bold">KapookHippo • Cloud Sync</span>
         </div>
         <h1 class="text-2xl md:text-3xl font-extrabold text-white mt-1">กระเป๋าเงินรวม & วิเคราะห์รายรับ-รายจ่าย</h1>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-2">
+        <span id="sync-status" class="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-emerald-400 flex items-center gap-1.5 shadow-inner">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> เชื่อมต่อระบบคลาวด์แล้ว
+        </span>
         <span id="header-date" class="px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-slate-400 shadow-inner"></span>
-        <button onclick="exportData()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-300 transition flex items-center gap-1">
-          📥 Backup
-        </button>
-        <button onclick="document.getElementById('import-file').click()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-300 transition flex items-center gap-1">
-          📤 Restore
-        </button>
-        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
       </div>
     </header>
 
@@ -80,7 +76,7 @@
       <!-- การ์ด 3: กราฟสัดส่วนธุรกรรมตามช่องทาง (Col 4) -->
       <div class="md:col-span-4 bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-800 shadow-lg flex flex-col justify-between">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">🍩 สัดส่วนธุรกรรมตามช่องทาง</h3>
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">🍩 สัดส่วนตามช่องทาง</h3>
           <span class="text-[10px] text-slate-500">ธนาคาร & สินเชื่อ & แพลตฟอร์ม</span>
         </div>
         <div class="h-44 relative flex items-center justify-center">
@@ -90,7 +86,7 @@
 
     </div>
 
-    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (Multi-Wallet Bento Grid) -->
+    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี -->
     <div class="space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -102,10 +98,8 @@
         </button>
       </div>
 
-      <!-- Mini-Cards สำหรับทุกธนาคาร/ช่องทาง -->
-      <div id="wallet-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        <!-- Render ผ่าน JavaScript -->
-      </div>
+      <!-- Mini-Cards สำหรับทุกช่องทาง -->
+      <div id="wallet-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3"></div>
     </div>
 
     <!-- แถวล่าง: ฟอร์มบันทึก & รายการประวัติ -->
@@ -117,7 +111,7 @@
           <h2 class="text-sm font-bold text-white flex items-center gap-2">
             <span>⚡</span> บันทึกรายการใหม่
           </h2>
-          <span class="text-[11px] text-slate-500">รองรับค่าบ้าน/น้ำ/ไฟ & KTC</span>
+          <span class="text-[11px] text-cyan-400 font-medium">☁️ บันทึกลงคลาวด์</span>
         </div>
 
         <form id="tx-form" class="space-y-3.5">
@@ -204,8 +198,8 @@
             <input type="number" step="0.01" min="0.01" id="tx-amount" placeholder="0.00" required class="w-full text-base font-bold bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-cyan-300 outline-none focus:border-cyan-500 transition">
           </div>
 
-          <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] transition active:scale-[0.99]">
-            + บันทึกรายการลงระบบ
+          <button id="btn-submit" type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] transition active:scale-[0.99]">
+            + บันทึกรายการลงคลาวด์
           </button>
         </form>
       </div>
@@ -239,37 +233,63 @@
 
   </div>
 
-  <script>
-    // ข้อมูลช่องทาง & สีแบรนด์นีออน (เพิ่มเงินสด/อื่นๆ ครบถ้วน)
+  <!-- โหลด Firebase SDK แบบโมดูล -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      deleteDoc, 
+      doc, 
+      onSnapshot, 
+      query, 
+      orderBy,
+      getDocs,
+      writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // ตั้งค่า Firebase Config ของคุณ
+    const firebaseConfig = {
+      apiKey: "AIzaSyByoogz8XerHa5maCzK14mxNbUM6gKgWWg",
+      authDomain: "kapookhippo.firebaseapp.com",
+      databaseURL: "https://kapookhippo-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "kapookhippo",
+      storageBucket: "kapookhippo.firebasestorage.app",
+      messagingSenderId: "976639039652",
+      appId: "1:976639039652:web:99085a2a5c49ec24abee31",
+      measurementId: "G-ZH006FMM7C"
+    };
+
+    // เชื่อมต่อระบบ Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const txCollection = collection(db, "transactions");
+
     const CHANNELS = [
-      { id: 'KBANK', name: 'KBANK', color: '#10b981', tagText: 'text-emerald-400', tagBorder: 'border-emerald-500/40', tagBg: 'bg-emerald-500/10' },
-      { id: 'KTB', name: 'KTB', color: '#0ea5e9', tagText: 'text-sky-400', tagBorder: 'border-sky-500/40', tagBg: 'bg-sky-500/10' },
-      { id: 'SCB', name: 'SCB', color: '#a855f7', tagText: 'text-purple-400', tagBorder: 'border-purple-500/40', tagBg: 'bg-purple-500/10' },
-      { id: 'BAY', name: 'BAY', color: '#f59e0b', tagText: 'text-amber-400', tagBorder: 'border-amber-500/40', tagBg: 'bg-amber-500/10' },
-      { id: 'GHB', name: 'GHB', color: '#f97316', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
-      { id: 'KTC', name: 'KTC', color: '#38bdf8', tagText: 'text-blue-300', tagBorder: 'border-blue-400/40', tagBg: 'bg-blue-500/10' },
-      { id: 'Money Thunder', name: 'Thunder', color: '#6366f1', tagText: 'text-indigo-400', tagBorder: 'border-indigo-500/40', tagBg: 'bg-indigo-500/10' },
-      { id: 'UMey', name: 'Umay+', color: '#f43f5e', tagText: 'text-rose-400', tagBorder: 'border-rose-500/40', tagBg: 'bg-rose-500/10' },
-      { id: 'Shopee', name: 'Shopee', color: '#ea580c', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
-      { id: 'Tiktok', name: 'TikTok', color: '#94a3b8', tagText: 'text-slate-300', tagBorder: 'border-slate-500/40', tagBg: 'bg-slate-700/30' },
-      { id: 'เงินสด/อื่นๆ', name: 'เงินสด', color: '#14b8a6', tagText: 'text-teal-300', tagBorder: 'border-teal-400/40', tagBg: 'bg-teal-500/10' }
+      { id: 'KBANK', name: 'KBANK', color: '#10b981' },
+      { id: 'KTB', name: 'KTB', color: '#0ea5e9' },
+      { id: 'SCB', name: 'SCB', color: '#a855f7' },
+      { id: 'BAY', name: 'BAY', color: '#f59e0b' },
+      { id: 'GHB', name: 'GHB', color: '#f97316' },
+      { id: 'KTC', name: 'KTC', color: '#38bdf8' },
+      { id: 'Money Thunder', name: 'Thunder', color: '#6366f1' },
+      { id: 'UMey', name: 'Umay+', color: '#f43f5e' },
+      { id: 'Shopee', name: 'Shopee', color: '#ea580c' },
+      { id: 'Tiktok', name: 'TikTok', color: '#94a3b8' },
+      { id: 'เงินสด/อื่นๆ', name: 'เงินสด', color: '#14b8a6' }
     ];
 
-    let transactions = JSON.parse(localStorage.getItem('dark_bento_v3')) || [];
-    
-    // เติม Unique ID ให้ข้อมูลรุ่นเก่าที่ยังไม่มี ID
-    transactions = transactions.map(t => t.id ? t : { ...t, id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) });
-
+    let transactions = [];
     let currentFilter = 'ALL';
     let flowChart = null;
     let channelChart = null;
 
-    // ตั้งค่าวันปัจจุบัน
     document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('header-date').innerText = '📅 ' + new Date().toLocaleDateString('th-TH', { dateStyle: 'medium' });
 
+    // สร้างกราฟเริ่มต้น
     function initDarkCharts() {
-      // 1. Flow Chart (กระแสเงินสด)
       const ctxFlow = document.getElementById('flowChart').getContext('2d');
       flowChart = new Chart(ctxFlow, {
         type: 'bar',
@@ -300,7 +320,6 @@
         }
       });
 
-      // 2. Channel Chart (สัดส่วนตามช่องทาง)
       const ctxChannel = document.getElementById('channelChart').getContext('2d');
       channelChart = new Chart(ctxChannel, {
         type: 'doughnut',
@@ -339,7 +358,6 @@
       return balances;
     }
 
-    // เรนเดอร์การ์ดกระเป๋าเงินแยกตามบัญชี
     function renderWalletCards() {
       const grid = document.getElementById('wallet-cards-grid');
       const balances = calculateChannelBalances();
@@ -389,7 +407,6 @@
       netElem.innerText = `฿${net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
       netElem.className = `text-3xl md:text-4xl font-extrabold mt-2 ${net >= 0 ? 'text-cyan-400' : 'text-rose-400'} drop-shadow-[0_0_15px_rgba(34,211,238,0.25)]`;
 
-      // อัปเดตกราฟ
       if (flowChart && channelChart) {
         flowChart.data.datasets[0].data = [income, expense];
         flowChart.update();
@@ -408,7 +425,7 @@
       }
     }
 
-    function renderTransactions() {
+    window.renderTransactions = function() {
       const list = document.getElementById('tx-list');
       const empty = document.getElementById('tx-empty');
       const typeFilter = document.getElementById('filter-type').value;
@@ -431,15 +448,13 @@
       filtered.forEach((t) => {
         const isInc = t.type === 'income';
         const amt = parseFloat(t.amount) || 0;
-        const ch = CHANNELS.find(c => c.id === t.channel) || {
-          tagText: 'text-slate-400', tagBorder: 'border-slate-700', tagBg: 'bg-slate-800'
-        };
+        const ch = CHANNELS.find(c => c.id === t.channel) || { color: '#94a3b8' };
 
         const item = document.createElement('div');
         item.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition group';
         item.innerHTML = `
           <div class="flex items-center gap-3">
-            <span class="text-xs px-2.5 py-1 rounded-lg border font-bold ${ch.tagBg} ${ch.tagBorder} ${ch.tagText}">
+            <span class="text-xs px-2.5 py-1 rounded-lg border font-bold" style="color: ${ch.color}; border-color: ${ch.color}40; background-color: ${ch.color}15">
               ${t.channel}
             </span>
             <div>
@@ -451,12 +466,12 @@
             <span class="text-xs font-bold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">
               ${isInc ? '+' : '-'}฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
             </span>
-            <button onclick="deleteTxById('${t.id}')" class="text-slate-600 hover:text-rose-400 text-xs p-1 transition" title="ลบรายการ">✕</button>
+            <button onclick="deleteTx('${t.id}')" class="text-slate-600 hover:text-rose-400 text-xs p-1 transition" title="ลบรายการ">✕</button>
           </div>
         `;
         list.appendChild(item);
       });
-    }
+    };
 
     function renderAll() {
       renderSummaryAndCharts();
@@ -464,93 +479,86 @@
       renderTransactions();
     }
 
-    function filterByChannel(channel) {
+    window.filterByChannel = function(channel) {
       currentFilter = channel;
       document.getElementById('active-filter-badge').innerText = channel === 'ALL' 
         ? 'แสดง: ทุกบัญชี' 
         : `แสดงเฉพาะบัญชี: ${channel}`;
       renderWalletCards();
       renderTransactions();
-    }
+    };
 
-    document.getElementById('tx-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const newTx = {
-        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        type: document.querySelector('input[name="tx-type"]:checked').value,
-        date: document.getElementById('tx-date').value,
-        channel: document.getElementById('tx-channel').value,
-        category: document.getElementById('tx-category').value,
-        desc: document.getElementById('tx-desc').value.trim(),
-        amount: parseFloat(document.getElementById('tx-amount').value)
-      };
-
-      transactions.unshift(newTx);
-      saveData();
-      document.getElementById('tx-desc').value = '';
-      document.getElementById('tx-amount').value = '';
+    // เชื่อมต่อ Realtime Firebase Listener (ดึงข้อมูลอัตโนมัติเมื่อมีการเปลี่ยนแปลง)
+    const q = query(txCollection, orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+      transactions = [];
+      snapshot.forEach((docSnap) => {
+        transactions.push({ id: docSnap.id, ...docSnap.data() });
+      });
       renderAll();
+    }, (error) => {
+      console.error("Firestore Error: ", error);
+      document.getElementById('sync-status').innerHTML = `⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ`;
+      document.getElementById('sync-status').className = 'px-3 py-1.5 bg-rose-950/40 border border-rose-800 rounded-xl text-xs font-semibold text-rose-400';
     });
 
-    // ป้องกันปัญหาลบผิดอันเมื่อมีการ Filter ด้วยการใช้ ID แทน Index
-    window.deleteTxById = function(id) {
+    // บันทึกรายการใหม่ลง Cloud Firestore
+    document.getElementById('tx-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('btn-submit');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'กำลังบันทึกลงคลาวด์...';
+
+      try {
+        await addDoc(txCollection, {
+          type: document.querySelector('input[name="tx-type"]:checked').value,
+          date: document.getElementById('tx-date').value,
+          channel: document.getElementById('tx-channel').value,
+          category: document.getElementById('tx-category').value,
+          desc: document.getElementById('tx-desc').value.trim(),
+          amount: parseFloat(document.getElementById('tx-amount').value),
+          createdAt: Date.now()
+        });
+
+        document.getElementById('tx-desc').value = '';
+        document.getElementById('tx-amount').value = '';
+      } catch (err) {
+        alert("ไม่สามารถบันทึกได้: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '+ บันทึกรายการลงคลาวด์';
+      }
+    });
+
+    // ลบรายการออกจาก Firestore
+    window.deleteTx = async function(docId) {
       if (confirm('ยืนยันลบรายการนี้ใช่หรือไม่?')) {
-        transactions = transactions.filter(t => t.id !== id);
-        saveData();
-        renderAll();
-      }
-    };
-
-    window.clearAllData = function() {
-      if (confirm('คุณต้องการล้างข้อมูลประวัติทั้งหมดใช่หรือไม่? (การกระทำนี้ไม่สามารถย้อนกลับได้)')) {
-        transactions = [];
-        localStorage.removeItem('dark_bento_v3');
-        renderAll();
-      }
-    };
-
-    function saveData() {
-      localStorage.setItem('dark_bento_v3', JSON.stringify(transactions));
-    }
-
-    // ฟังก์ชัน Backup / Restore JSON
-    window.exportData = function() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `wallet_backup_${new Date().toISOString().split('T')[0]}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    };
-
-    window.importData = function(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
         try {
-          const parsed = JSON.parse(e.target.result);
-          if (Array.isArray(parsed)) {
-            transactions = parsed.map(t => t.id ? t : { ...t, id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) });
-            saveData();
-            renderAll();
-            alert('นำเข้าข้อมูลสำเร็จแล้ว!');
-          } else {
-            alert('โครงสร้างไฟล์ไม่ถูกต้อง');
-          }
+          await deleteDoc(doc(db, "transactions", docId));
         } catch (err) {
-          alert('ไม่สามารถอ่านไฟล์ JSON นี้ได้');
+          alert("ไม่สามารถลบได้: " + err.message);
         }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
+      }
     };
 
-    // เริ่มการทำงาน
+    // ล้างข้อมูลทั้งหมดในคลาวด์
+    window.clearAllData = async function() {
+      if (confirm('คุณต้องการล้างข้อมูลประวัติทั้งหมดบนคลาวด์ใช่หรือไม่? (ย้อนกลับไม่ได้)')) {
+        try {
+          const snapshot = await getDocs(txCollection);
+          const batch = writeBatch(db);
+          snapshot.forEach((docSnap) => {
+            batch.delete(docSnap.ref);
+          });
+          await batch.commit();
+        } catch (err) {
+          alert("เกิดข้อผิดพลาด: " + err.message);
+        }
+      }
+    };
+
+    // เริ่มสร้างชาร์ต
     initDarkCharts();
-    renderAll();
   </script>
 </body>
 </html>
